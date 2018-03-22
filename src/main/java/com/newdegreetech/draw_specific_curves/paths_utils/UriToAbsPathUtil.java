@@ -1,4 +1,4 @@
-package com.newdegreetech.draw_specific_curves;
+package com.newdegreetech.draw_specific_curves.paths_utils;
 
 import android.annotation.TargetApi;
 import android.content.ContentResolver;

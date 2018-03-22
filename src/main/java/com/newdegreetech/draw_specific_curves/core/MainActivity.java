@@ -1,25 +1,19 @@
-package com.newdegreetech.draw_specific_curves;
+package com.newdegreetech.draw_specific_curves.core;
 
 import android.Manifest;
-import android.annotation.SuppressLint;
-import android.app.Activity;
-import android.content.ContentResolver;
-import android.content.ContentUris;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
-import android.os.Environment;
-import android.preference.PreferenceManager;
-import android.provider.DocumentsContract;
-import android.provider.MediaStore;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.View;
+import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,12 +21,12 @@ import com.github.mikephil.charting.charts.LineChart;
 import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.data.LineData;
 import com.github.mikephil.charting.data.LineDataSet;
+import com.newdegreetech.draw_specific_curves.R;
+import com.newdegreetech.draw_specific_curves.paths_utils.UriToAbsPathUtil;
 
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,23 +36,44 @@ public class MainActivity extends AppCompatActivity {
     Button btnSelectFile;
     String strPath;
     LineChart lcDrawPlot;
+    LinearLayout.LayoutParams params;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //取消标题栏
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //取消状态栏
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_main);
 
-        tvPath = findViewById(R.id.tvPath);
         btnSelectFile = findViewById(R.id.btnSelectFile);
         lcDrawPlot = findViewById(R.id.lcPlotCurve);
+        params = (LinearLayout.LayoutParams) lcDrawPlot.getLayoutParams();
 
         btnSelectFile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                 intent.setType("*/*");
-                intent.addCategory(intent.CATEGORY_OPENABLE);
+                intent.addCategory(Intent.CATEGORY_OPENABLE);
                 startActivityForResult(intent, 1);
+            }
+        });
+
+        lcDrawPlot.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                int[] size = getScreenSize();
+                Log.d("fuck", params.weight + " " + params.height);
+                Log.d("fuck", size[0] + " " + size[1]);
+                params.weight = size[0];
+                params.height = size[1];
+                lcDrawPlot.setLayoutParams(params);
+                lcDrawPlot.setRotation(90);
+                Log.d("fuck", ((LinearLayout.LayoutParams) lcDrawPlot.getLayoutParams()).weight + " " + lcDrawPlot.getLayoutParams().height);
+                return true;
             }
         });
     }
@@ -97,30 +112,43 @@ public class MainActivity extends AppCompatActivity {
                 String str = readFileSdcardFile(path);
                 for (String strline : str.split("\n")) {
                     String[] strPhrase = strline.split(" ");
-                    fdata.add(Float.parseFloat(strPhrase[1]));
-                    Log.v("fuck", strPhrase[1]);
+                    fdata.add(Float.parseFloat(strPhrase[0]));
+//                    Log.v("fuck", strPhrase[0]);
                 }
-//                Log.v("fuck",str);
             } catch (IOException e) {
                 e.printStackTrace();
             }
 
-            Log.v("fuck",fdata.size()+"");
+            Log.v("fuck", fdata.size() + "");
             lcDrawPlot.setDrawBorders(true);
             //设置数据
             List<Entry> entries = new ArrayList<>();
             for (int i = 0; i < fdata.size(); i++) {
                 entries.add(new Entry(i, fdata.get(i)));
             }
-//            for (int i = 0; i < 10; i++) {
-//                entries.add(new Entry(i, (float) (Math.random()) * 80));
-//            }
             //一个LineDataSet就是一条线
             LineDataSet lineDataSet = new LineDataSet(entries, "温度");
             LineData ldata = new LineData(lineDataSet);
             lcDrawPlot.setData(ldata);
         }
     }
+
+
+    //获取运行屏幕宽度
+    public int[] getScreenSize() {
+        DisplayMetrics dm = new DisplayMetrics();
+        Log.d("fuck", 1 + "");
+        getWindowManager().getDefaultDisplay().getMetrics(dm);
+        Log.d("fuck", 2 + "");
+        //宽度 dm.widthPixels
+        //高度 dm.heightPixels
+        return new int[]{dm.widthPixels, dm.heightPixels};
+    }
+
+//    private List<Entry> get_filtered_data(ArrayList<Float> data, int avg_win_len) {
+//        ArrayList<Float>filtered_data = new ArrayList<>();
+//
+//    }
 
     // write SDCard
     private void writeFileSdcardFile(String fileName, String writeStr) throws IOException {
